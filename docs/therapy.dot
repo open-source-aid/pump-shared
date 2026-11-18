@@ -1,0 +1,47 @@
+digraph therapy {
+    rankdir=LR;
+    subgraph cluster_mode {
+        label="mode";
+        "mode.Off" -> "mode.Suspended" [label="Suspended"];
+        "mode.Running" -> "mode.Suspended" [label="Suspended"];
+        "mode.Running" -> "mode.Off" [label="TurnedOff"];
+        "mode.Suspended" -> "mode.Running" [label="Resumed"];
+        "mode.Suspended" -> "mode.Off" [label="TurnedOff"];
+        "mode.Unknown" -> "mode.Suspended" [label="Suspended"];
+        "mode.Unknown" -> "mode.Off" [label="TurnedOff"];
+    }
+    subgraph cluster_basal {
+        label="basal";
+        "basal.Scheduled" -> "basal.Temporary" [label="TempBasalStarted"];
+        "basal.Scheduled" -> "basal.Unknown" [label="TurnedOff"];
+        "basal.Temporary" -> "basal.Scheduled" [label="Suspended"];
+        "basal.Temporary" -> "basal.Scheduled" [label="TempBasalEnded"];
+        "basal.Temporary" -> "basal.Unknown" [label="TurnedOff"];
+        "basal.Unknown" -> "basal.Scheduled" [label="Suspended"];
+        "basal.Unknown" -> "basal.Scheduled" [label="TempBasalEnded"];
+        "basal.Unknown" -> "basal.Temporary" [label="TempBasalStarted"];
+    }
+    subgraph cluster_bolus {
+        label="bolus";
+        "bolus.Idle" -> "bolus.Immediate" [label="BolusStarted"];
+        "bolus.Idle" -> "bolus.Unknown" [label="TurnedOff"];
+        "bolus.Immediate" -> "bolus.Idle" [label="BolusEnded"];
+        "bolus.Immediate" -> "bolus.Immediate" [label="BolusProgressed"];
+        "bolus.Immediate" -> "bolus.Unknown" [label="LinkLost"];
+        "bolus.Immediate" -> "bolus.Idle" [label="Suspended"];
+        "bolus.Immediate" -> "bolus.Unknown" [label="TurnedOff"];
+        "bolus.Unknown" -> "bolus.Idle" [label="BolusEnded"];
+        "bolus.Unknown" -> "bolus.Idle" [label="Suspended"];
+    }
+    subgraph cluster_extended {
+        label="extended";
+        "extended.Idle" -> "extended.Running" [label="ExtendedStarted"];
+        "extended.Idle" -> "extended.Unknown" [label="TurnedOff"];
+        "extended.Running" -> "extended.Idle" [label="ExtendedEnded"];
+        "extended.Running" -> "extended.Unknown" [label="LinkLost"];
+        "extended.Running" -> "extended.Idle" [label="Suspended"];
+        "extended.Running" -> "extended.Unknown" [label="TurnedOff"];
+        "extended.Unknown" -> "extended.Idle" [label="ExtendedEnded"];
+        "extended.Unknown" -> "extended.Idle" [label="Suspended"];
+    }
+}

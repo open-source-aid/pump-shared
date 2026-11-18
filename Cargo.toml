@@ -1,0 +1,18 @@
+[package]
+name = "pump-shared"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+description = "Shared contract for sans-IO insulin pump and CGM drivers"
+license = "AGPL-3.0-or-later"
+repository = "https://github.com/u-osaid/pump-shared"
+keywords = ["insulin", "pump", "ble", "sans-io", "no-std"]
+categories = ["no-std", "embedded"]
+
+[features]
+default = ["std"]
+std = []
+testkit = ["std"]
+
+[dependencies]
+zeroize = { version = "1", default-features = false, features = ["alloc"] }
