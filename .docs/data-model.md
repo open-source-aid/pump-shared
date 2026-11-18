@@ -22,22 +22,18 @@ The types every driver reports and every app reads. Drivers convert their pump's
 | Monotonic clock | `Timestamp` | host monotonic milliseconds | |
 | Pump clock | `PumpTime` | pump-local seconds, as the pump shows them | |
 
-The milli-unit covers every pump in AAPS, Loop and Trio: Medtronic 0.025 U, Ypso 0.01/0.02 U/h tiers, Tandem 0.001 U/h, and AAPS insulin-concentration scaling.
+Amounts are in the pump's own units (U100 volume). Insulin concentration is not part of the library: converting to and from the insulin actually delivered belongs to the caller.
 
-## Converting from and to apps
-
-AAPS, Loop and Trio use `Double` (Trio stores `Decimal`).
+## Converting
 
 | Direction | Conversion |
 |---|---|
-| Library to app | `milliunits as f64 / 1000.0` |
-| App to library | `round(units * 1000.0)`, never truncation (`0.15 / 0.05` is `2.9999…`) |
-| Instants | Unix ms in both AAPS and Loop (`Date(timeIntervalSince1970: ms / 1000)`) |
-| Battery | percent; Loop wants `percent / 100.0` |
+| To floating-point units | `milliunits as f64 / 1000.0` |
+| From floating-point units | `round(units * 1000.0)`, never truncation (`0.15 / 0.05` is `2.9999…`) |
 | Absolute to percent temp basal | `BasalRate::percent_of(scheduled)`, nearest percent |
 | Percent to absolute temp basal | `TempBasalRate::absolute(scheduled)`, rounded down |
 
-Loop and Trio only send absolute temp basals; a percent-only pump (YpsoPump, Dana) converts with the scheduled rate from the active `BasalProfile`.
+A pump that only accepts one kind of temp basal converts the other with the scheduled rate from the active `BasalProfile`.
 
 ## Limits and rounding
 
@@ -54,12 +50,12 @@ Loop and Trio only send absolute temp basals; a percent-only pump (YpsoPump, Dan
 
 `Bounds<T>` is `min`, `max` and a list of `Tier { from, step }`: the step that applies to a value is the one of the last tier whose `from` is at or below it. Steps count from zero. Example, YpsoPump basal: 0.01 U/h from 0, 0.02 from 1, 0.1 from 2, 0.5 from 15.
 
-| Method | Meaning | Used by |
-|---|---|---|
-| `allows(v)` | in range and on the grid | drivers, before sending anything |
-| `floor(v)` | largest allowed value at or below `v` | Loop (`roundToSupportedBolusVolume`) |
-| `nearest(v)` | closest allowed value, ties round down | AAPS (`determineCorrectBolusSize`) |
-| `values()` | every allowed value, ascending | Loop (`supportedBolusVolumes`, `supportedBasalRates`) |
+| Method | Meaning |
+|---|---|
+| `allows(v)` | in range and on the grid |
+| `floor(v)` | largest allowed value at or below `v` |
+| `nearest(v)` | closest allowed value, ties round down |
+| `values()` | every allowed value, ascending |
 
 A driver refuses a value that `allows` rejects (`Refusal::OutOfLimits`); it never rounds a dose itself.
 
@@ -71,12 +67,12 @@ A driver refuses a value that `allows` rejects (`Refusal::OutOfLimits`); it neve
 
 | Field | Meaning |
 |---|---|
-| `therapy` | `TherapyState`: mode, basal, bolus and extended bolus regions (see `therapy.mmd`) |
+| `therapy` | `TherapyState`: mode, basal, bolus and extended bolus regions (see [`therapy.mmd`](therapy.mmd) and [`therapy-overview.mmd`](therapy-overview.mmd)) |
 | `battery` | `Option<Percent>` |
 | `reservoir` | `Option<InsulinAmount>` |
 | `basal_rate` | the rate running now |
 | `clock` | `Option<PumpTime>`; `to_utc(offset)` and `drift(offset, now)` |
-| `delivery_uncertain` | a command may or may not have been acted on (Loop's `deliveryIsUncertain`) |
+| `delivery_uncertain` | a command may or may not have been acted on |
 | `alarms` | active `Alarm`s |
 
 ## Basal profile
@@ -85,7 +81,7 @@ A driver refuses a value that `allows` rejects (`Refusal::OutOfLimits`); it neve
 
 ## History
 
-Each `HistoryEntry` holds `sequence` (the pump's own number), `time` (UTC), `pump_time` (as the pump recorded it), `event` and `raw` (the bytes as read). `sync_id(serial)` returns `"<serial>-<sequence>"`, stable across reads, for deduplication (AAPS `pumpId`, Loop `syncIdentifier`).
+Each `HistoryEntry` holds `sequence` (the pump's own number), `time` (UTC), `pump_time` (as the pump recorded it), `event` and `raw` (the bytes as read). `sync_id(serial)` returns `"<serial>-<sequence>"`, stable across reads, for deduplication.
 
 | Event | Fields |
 |---|---|
@@ -116,7 +112,3 @@ Alarm kinds: `Occlusion`, `ReservoirLow`, `ReservoirEmpty`, `BatteryLow`, `Batte
 Stop paths are never refused for a missing feature or a pump state. `Resume` is only accepted from a suspended pump.
 
 A finished command reports an `Outcome`: `Completed(Report)`, `Refused(Refusal)` (nothing was sent), `Unknown` (something was sent and the result is not known; never retried) or `Failed(Failure)`. `Report` is `Done`, `Status(PumpStatus)`, `Clock(PumpTime)`, `Delivered(InsulinAmount)`, `Profile(BasalProfile)` or `History(Vec<HistoryEntry>)`.
-
-## Sources
-
-The unit choice and the event list follow the models of AndroidAPS (`PumpType`, `PumpDescription`, `PumpSync`, `TE`), LoopKit (`PumpManager`, `PumpManagerStatus`, `NewPumpEvent`, `PumpEventType`, `PumpAlarmType`) and Trio (`PumpHistoryEvent`, `PumpEventStored`).
