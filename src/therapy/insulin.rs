@@ -3,6 +3,8 @@ use core::time::Duration;
 
 pub trait Quantity: Copy + Ord {
     fn raw(self) -> u64;
+
+    fn from_raw(raw: u64) -> Self;
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -60,9 +62,23 @@ pub enum TempBasalRate {
     Absolute(BasalRate),
 }
 
+impl BasalRate {
+    pub fn percent_of(self, scheduled: BasalRate) -> Option<Percent> {
+        let base = u64::from(scheduled.0);
+        (base != 0).then(|| Percent::from_raw((u64::from(self.0) * 100 + base / 2) / base))
+    }
+}
+
 impl TempBasalRate {
     pub const fn is_neutral(self) -> bool {
         matches!(self, Self::Percent(p) if p.is_neutral())
+    }
+
+    pub fn absolute(self, scheduled: BasalRate) -> BasalRate {
+        match self {
+            Self::Absolute(rate) => rate,
+            Self::Percent(p) => BasalRate::from_raw(u64::from(scheduled.0) * u64::from(p.0) / 100),
+        }
     }
 }
 
@@ -70,11 +86,19 @@ impl Quantity for InsulinAmount {
     fn raw(self) -> u64 {
         self.0.into()
     }
+
+    fn from_raw(raw: u64) -> Self {
+        Self(u32::try_from(raw).unwrap_or(u32::MAX))
+    }
 }
 
 impl Quantity for BasalRate {
     fn raw(self) -> u64 {
         self.0.into()
+    }
+
+    fn from_raw(raw: u64) -> Self {
+        Self(u32::try_from(raw).unwrap_or(u32::MAX))
     }
 }
 
@@ -82,11 +106,19 @@ impl Quantity for Percent {
     fn raw(self) -> u64 {
         self.0.into()
     }
+
+    fn from_raw(raw: u64) -> Self {
+        Self(u16::try_from(raw).unwrap_or(u16::MAX))
+    }
 }
 
 impl Quantity for Duration {
     fn raw(self) -> u64 {
         self.as_secs()
+    }
+
+    fn from_raw(raw: u64) -> Self {
+        Self::from_secs(raw)
     }
 }
 
@@ -155,6 +187,34 @@ mod tests {
         assert!(TempBasalRate::Percent(Percent::NEUTRAL).is_neutral());
         assert!(!TempBasalRate::Percent(Percent::new(120)).is_neutral());
         assert!(!TempBasalRate::Absolute(BasalRate::ZERO).is_neutral());
+    }
+
+    #[test]
+    fn saturates_raw_conversions() {
+        assert_eq!(InsulinAmount::from_raw(u64::MAX).milliunits(), u32::MAX);
+        assert_eq!(
+            BasalRate::from_raw(u64::MAX).milliunits_per_hour(),
+            u32::MAX
+        );
+        assert_eq!(Percent::from_raw(u64::MAX).get(), u16::MAX);
+        assert_eq!(Duration::from_raw(5), Duration::from_secs(5));
+    }
+
+    #[test]
+    fn converts_between_absolute_and_percent() {
+        let scheduled = BasalRate::from_milliunits_per_hour(800);
+        let rate = BasalRate::from_milliunits_per_hour(1_200);
+        assert_eq!(rate.percent_of(scheduled), Some(Percent::new(150)));
+        assert_eq!(
+            BasalRate::from_milliunits_per_hour(805).percent_of(scheduled),
+            Some(Percent::new(101))
+        );
+        assert_eq!(rate.percent_of(BasalRate::ZERO), None);
+        assert_eq!(
+            TempBasalRate::Percent(Percent::new(150)).absolute(scheduled),
+            rate
+        );
+        assert_eq!(TempBasalRate::Absolute(rate).absolute(scheduled), rate);
     }
 
     #[test]

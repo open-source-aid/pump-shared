@@ -1,3 +1,4 @@
+use alloc::boxed::Box;
 use alloc::string::String;
 use core::fmt;
 
@@ -74,7 +75,7 @@ pub enum Event {
         id: CommandId,
         outcome: Outcome,
     },
-    DeviceInfo(DeviceInfo),
+    DeviceInfo(Box<DeviceInfo>),
     StateChanged(EngineState),
     TherapyChanged(TherapyState),
     Log {

@@ -1,6 +1,8 @@
 use core::time::Duration;
 
-use crate::{BasalRate, InsulinAmount, Percent, TherapyState, UtcTime};
+use alloc::vec::Vec;
+
+use crate::{Alarm, BasalRate, InsulinAmount, Percent, TherapyState, UtcTime};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PumpTime(u64);
@@ -25,13 +27,15 @@ impl PumpTime {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct PumpStatus {
     pub therapy: TherapyState,
     pub battery: Option<Percent>,
     pub reservoir: Option<InsulinAmount>,
     pub basal_rate: Option<BasalRate>,
     pub clock: Option<PumpTime>,
+    pub delivery_uncertain: bool,
+    pub alarms: Vec<Alarm>,
 }
 
 #[cfg(test)]
@@ -70,5 +74,7 @@ mod tests {
         let status = PumpStatus::default();
         assert_eq!(status.battery, None);
         assert_eq!(status.therapy, TherapyState::default());
+        assert!(!status.delivery_uncertain);
+        assert!(status.alarms.is_empty());
     }
 }

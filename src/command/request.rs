@@ -1,7 +1,7 @@
 use core::time::Duration;
 
 use crate::KeyRef;
-use crate::{Address, BasalProfile, InsulinAmount, Sequence, TempBasalRate};
+use crate::{Address, BasalProfile, BasalRate, InsulinAmount, Sequence, TempBasalRate};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -36,6 +36,10 @@ pub enum Command {
     },
     Suspend,
     Resume,
+    SetDeliveryLimits {
+        max_bolus: InsulinAmount,
+        max_basal: BasalRate,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -56,6 +60,7 @@ pub enum CommandKind {
     SetBasalProfile,
     Suspend,
     Resume,
+    SetDeliveryLimits,
     Stop,
 }
 
@@ -77,6 +82,7 @@ impl Command {
             Self::SetBasalProfile { .. } => CommandKind::SetBasalProfile,
             Self::Suspend => CommandKind::Suspend,
             Self::Resume => CommandKind::Resume,
+            Self::SetDeliveryLimits { .. } => CommandKind::SetDeliveryLimits,
         }
     }
 
@@ -205,5 +211,11 @@ mod tests {
         assert!(Command::Suspend.is_stop_path());
         assert_eq!(Command::Resume.kind(), CommandKind::Resume);
         assert!(Command::Resume.delivers_insulin());
+        let limits = Command::SetDeliveryLimits {
+            max_bolus: InsulinAmount::from_milliunits(10_000),
+            max_basal: crate::BasalRate::from_milliunits_per_hour(3_000),
+        };
+        assert_eq!(limits.kind(), CommandKind::SetDeliveryLimits);
+        assert!(!limits.delivers_insulin());
     }
 }

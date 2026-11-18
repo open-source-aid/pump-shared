@@ -11,15 +11,15 @@ pub mod therapy;
 
 pub use command::{Command, CommandKind, Failure, Outcome, Refusal, Report};
 pub use device::{
-    Address, Advertisement, BleMatch, BleOp, BleResult, Bounds, Config, DeviceInfo, Driver,
-    DriverInfo, EngineState, Feature, GattChar, Kind, Limits, PumpStatus, PumpTime, Sequence, Uuid,
-    Variant,
+    Address, Advertisement, BleMatch, BleOp, BleResult, Bounds, Capabilities, Config, DeviceInfo,
+    Driver, DriverInfo, EngineState, Feature, GattChar, Kind, Limits, PumpStatus, PumpTime,
+    Sequence, Tier, Uuid, Variant,
 };
 pub use engine::{
     Action, Class, CommandId, Completion, CompletionError, Engine, Event, KeyRef, OpId, Secret,
     Slot, SubmitError, Timestamp, UtcTime,
 };
-pub use history::{BolusKind, HistoryEntry, HistoryEvent};
+pub use history::{Alarm, AlarmKind, BolusKind, Component, HistoryEntry, HistoryEvent};
 pub use therapy::{
     Basal, BasalProfile, BasalRate, BasalSegment, Bolus, Extended, InsulinAmount, Percent,
     ProfileError, PumpMode, Quantity, TempBasalRate, TherapyMachine, TherapyState, Transition,

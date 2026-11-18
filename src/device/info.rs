@@ -1,7 +1,7 @@
 use alloc::string::String;
 use core::fmt;
 
-use crate::Limits;
+use crate::{Capabilities, Limits};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Address([u8; 6]);
@@ -52,6 +52,7 @@ pub struct DeviceInfo {
     pub firmware: String,
     pub variant: &'static str,
     pub limits: Limits,
+    pub capabilities: Capabilities,
 }
 
 #[cfg(test)]
