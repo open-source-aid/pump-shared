@@ -1,7 +1,7 @@
 use core::time::Duration;
 
 use crate::KeyRef;
-use crate::{Address, InsulinAmount, Percent, Sequence};
+use crate::{Address, BasalProfile, InsulinAmount, Sequence, TempBasalRate};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -16,7 +16,7 @@ pub enum Command {
         amount: InsulinAmount,
     },
     TempBasal {
-        rate: Percent,
+        rate: TempBasalRate,
         duration: Duration,
     },
     CancelTempBasal,
@@ -30,6 +30,12 @@ pub enum Command {
     ReadHistory {
         after: Sequence,
     },
+    ReadBasalProfile,
+    SetBasalProfile {
+        profile: BasalProfile,
+    },
+    Suspend,
+    Resume,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -46,6 +52,10 @@ pub enum CommandKind {
     ReadClock,
     SyncClock,
     ReadHistory,
+    ReadBasalProfile,
+    SetBasalProfile,
+    Suspend,
+    Resume,
     Stop,
 }
 
@@ -63,12 +73,16 @@ impl Command {
             Self::ReadClock => CommandKind::ReadClock,
             Self::SyncClock => CommandKind::SyncClock,
             Self::ReadHistory { .. } => CommandKind::ReadHistory,
+            Self::ReadBasalProfile => CommandKind::ReadBasalProfile,
+            Self::SetBasalProfile { .. } => CommandKind::SetBasalProfile,
+            Self::Suspend => CommandKind::Suspend,
+            Self::Resume => CommandKind::Resume,
         }
     }
 
     pub fn is_stop_path(&self) -> bool {
         match self {
-            Self::CancelTempBasal | Self::CancelExtendedBolus => true,
+            Self::CancelTempBasal | Self::CancelExtendedBolus | Self::Suspend => true,
             Self::TempBasal { rate, .. } => rate.is_neutral(),
             _ => false,
         }
@@ -76,7 +90,10 @@ impl Command {
 
     pub fn delivers_insulin(&self) -> bool {
         match self {
-            Self::Bolus { .. } | Self::ExtendedBolus { .. } => true,
+            Self::Bolus { .. }
+            | Self::ExtendedBolus { .. }
+            | Self::SetBasalProfile { .. }
+            | Self::Resume => true,
             Self::TempBasal { rate, .. } => !rate.is_neutral(),
             _ => false,
         }
@@ -86,11 +103,12 @@ impl Command {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Percent;
 
     #[test]
     fn neutral_temp_basal_is_a_stop_path() {
         let cancel = Command::TempBasal {
-            rate: Percent::NEUTRAL,
+            rate: TempBasalRate::Percent(Percent::NEUTRAL),
             duration: Duration::from_secs(1800),
         };
         assert!(cancel.is_stop_path());
@@ -100,7 +118,7 @@ mod tests {
     #[test]
     fn bolus_delivers_insulin() {
         let bolus = Command::Bolus {
-            amount: InsulinAmount::from_hundredths(100),
+            amount: InsulinAmount::from_milliunits(100),
         };
         assert!(bolus.delivers_insulin());
         assert!(!bolus.is_stop_path());
@@ -110,7 +128,7 @@ mod tests {
     #[test]
     fn every_command_has_its_kind() {
         let hour = Duration::from_secs(3600);
-        let amount = InsulinAmount::from_hundredths(100);
+        let amount = InsulinAmount::from_milliunits(100);
         let cases = [
             (Command::Status, CommandKind::Status),
             (
@@ -124,7 +142,7 @@ mod tests {
             (Command::Bolus { amount }, CommandKind::Bolus),
             (
                 Command::TempBasal {
-                    rate: Percent::new(120),
+                    rate: TempBasalRate::Percent(Percent::new(120)),
                     duration: hour,
                 },
                 CommandKind::TempBasal,
@@ -158,7 +176,7 @@ mod tests {
     #[test]
     fn classifies_stop_paths_and_delivery() {
         let extended = Command::ExtendedBolus {
-            amount: InsulinAmount::from_hundredths(100),
+            amount: InsulinAmount::from_milliunits(100),
             duration: Duration::from_secs(3600),
         };
         assert!(Command::CancelTempBasal.is_stop_path());
@@ -166,5 +184,26 @@ mod tests {
         assert!(!Command::Status.is_stop_path());
         assert!(extended.delivers_insulin());
         assert!(!Command::Status.delivers_insulin());
+    }
+
+    #[test]
+    fn profile_and_suspend_commands() {
+        let profile = crate::BasalProfile::new(alloc::vec![crate::BasalSegment {
+            start: Duration::ZERO,
+            rate: crate::BasalRate::from_milliunits_per_hour(800),
+        }])
+        .unwrap();
+        let set = Command::SetBasalProfile { profile };
+        assert_eq!(set.kind(), CommandKind::SetBasalProfile);
+        assert!(set.delivers_insulin());
+        assert_eq!(
+            Command::ReadBasalProfile.kind(),
+            CommandKind::ReadBasalProfile
+        );
+        assert!(!Command::ReadBasalProfile.delivers_insulin());
+        assert_eq!(Command::Suspend.kind(), CommandKind::Suspend);
+        assert!(Command::Suspend.is_stop_path());
+        assert_eq!(Command::Resume.kind(), CommandKind::Resume);
+        assert!(Command::Resume.delivers_insulin());
     }
 }

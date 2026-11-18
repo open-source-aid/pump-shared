@@ -1,7 +1,7 @@
 use alloc::string::String;
 use core::fmt;
 
-use crate::InsulinAmount;
+use crate::Limits;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Address([u8; 6]);
@@ -51,8 +51,7 @@ pub struct DeviceInfo {
     pub serial: String,
     pub firmware: String,
     pub variant: &'static str,
-    pub max_bolus: Option<InsulinAmount>,
-    pub bolus_step: Option<InsulinAmount>,
+    pub limits: Limits,
 }
 
 #[cfg(test)]

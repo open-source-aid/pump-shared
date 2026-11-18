@@ -1,10 +1,11 @@
-use alloc::vec::Vec;
 use core::fmt;
+
+use crate::Report;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Outcome {
-    Completed { detail: Vec<u8> },
+    Completed(Report),
     Refused(Refusal),
     Unknown,
     Failed(Failure),
@@ -16,6 +17,7 @@ pub enum Refusal {
     NotBuilt,
     NotPaired,
     NotRunning,
+    NotSuspended,
     OutOfLimits,
     Busy,
     Unsupported,
@@ -37,6 +39,7 @@ impl fmt::Display for Refusal {
             Self::NotBuilt => "not built into this driver",
             Self::NotPaired => "device not paired",
             Self::NotRunning => "pump is not running",
+            Self::NotSuspended => "pump is not suspended",
             Self::OutOfLimits => "outside the device limits",
             Self::Busy => "another operation is running",
             Self::Unsupported => "not supported by this device",
@@ -70,6 +73,7 @@ mod tests {
             Refusal::NotBuilt,
             Refusal::NotPaired,
             Refusal::NotRunning,
+            Refusal::NotSuspended,
             Refusal::OutOfLimits,
             Refusal::Busy,
             Refusal::Unsupported,

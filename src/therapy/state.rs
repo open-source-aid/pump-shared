@@ -2,7 +2,7 @@ use alloc::boxed::Box;
 use core::fmt;
 use core::time::Duration;
 
-use crate::{Command, InsulinAmount, Percent, Refusal};
+use crate::{Command, InsulinAmount, Refusal, TempBasalRate};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -21,7 +21,7 @@ pub enum Basal {
     Unknown,
     Scheduled,
     Temporary {
-        rate: Percent,
+        rate: TempBasalRate,
         duration: Duration,
     },
 }
@@ -73,7 +73,7 @@ pub enum Transition {
     },
     BolusEnded,
     TempBasalStarted {
-        rate: Percent,
+        rate: TempBasalRate,
         duration: Duration,
     },
     TempBasalEnded,
@@ -175,6 +175,12 @@ impl TherapyState {
     pub fn guard(&self, command: &Command) -> Result<(), Refusal> {
         if command.is_stop_path() || !command.delivers_insulin() {
             return Ok(());
+        }
+        if *command == Command::Resume {
+            return match self.mode {
+                PumpMode::Suspended => Ok(()),
+                _ => Err(Refusal::NotSuspended),
+            };
         }
         if self.mode != PumpMode::Running {
             return Err(Refusal::NotRunning);
@@ -296,6 +302,7 @@ impl TherapyMachine for TherapyState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Percent;
 
     fn running() -> TherapyState {
         TherapyState {
@@ -307,7 +314,7 @@ mod tests {
     }
 
     fn units(hundredths: u32) -> InsulinAmount {
-        InsulinAmount::from_hundredths(hundredths)
+        InsulinAmount::from_milliunits(hundredths)
     }
 
     #[test]
@@ -394,13 +401,13 @@ mod tests {
         let half_hour = Duration::from_secs(1800);
         state
             .apply(Transition::TempBasalStarted {
-                rate: Percent::new(150),
+                rate: TempBasalRate::Percent(Percent::new(150)),
                 duration: half_hour,
             })
             .unwrap();
         state
             .apply(Transition::TempBasalStarted {
-                rate: Percent::NEUTRAL,
+                rate: TempBasalRate::Percent(Percent::NEUTRAL),
                 duration: half_hour,
             })
             .unwrap();
@@ -489,7 +496,7 @@ mod tests {
     fn temp_basal_needs_a_running_pump() {
         let half_hour = Duration::from_secs(1800);
         let start = Transition::TempBasalStarted {
-            rate: Percent::new(150),
+            rate: TempBasalRate::Percent(Percent::new(150)),
             duration: half_hour,
         };
         assert!(TherapyState::default().apply(start).is_err());
@@ -552,7 +559,7 @@ mod tests {
             },
             Transition::BolusEnded,
             Transition::TempBasalStarted {
-                rate: Percent::NEUTRAL,
+                rate: TempBasalRate::Percent(Percent::NEUTRAL),
                 duration: hour,
             },
             Transition::TempBasalEnded,
@@ -593,7 +600,7 @@ mod tests {
             Basal::Unknown,
             Basal::Scheduled,
             Basal::Temporary {
-                rate: Percent::new(150),
+                rate: TempBasalRate::Percent(Percent::new(150)),
                 duration: hour,
             },
         ];
@@ -622,5 +629,14 @@ mod tests {
             extendeds.map(Extended::name),
             ["Unknown", "Idle", "Running"]
         );
+    }
+
+    #[test]
+    fn resume_needs_a_suspended_pump_and_suspend_is_never_refused() {
+        let mut state = running();
+        assert_eq!(state.guard(&Command::Resume), Err(Refusal::NotSuspended));
+        assert_eq!(TherapyState::default().guard(&Command::Suspend), Ok(()));
+        state.apply(Transition::Suspended).unwrap();
+        assert_eq!(state.guard(&Command::Resume), Ok(()));
     }
 }

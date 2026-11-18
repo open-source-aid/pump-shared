@@ -6,20 +6,24 @@ extern crate alloc;
 pub mod command;
 pub mod device;
 pub mod engine;
+pub mod history;
 pub mod therapy;
 
-pub use command::{Command, CommandKind, Failure, Outcome, Refusal};
+pub use command::{Command, CommandKind, Failure, Outcome, Refusal, Report};
 pub use device::{
-    Address, Advertisement, BleMatch, BleOp, BleResult, Config, DeviceInfo, Driver, DriverInfo,
-    EngineState, Feature, GattChar, Kind, Sequence, Uuid, Variant,
+    Address, Advertisement, BleMatch, BleOp, BleResult, Bounds, Config, DeviceInfo, Driver,
+    DriverInfo, EngineState, Feature, GattChar, Kind, Limits, PumpStatus, PumpTime, Sequence, Uuid,
+    Variant,
 };
 pub use engine::{
     Action, Class, CommandId, Completion, CompletionError, Engine, Event, KeyRef, OpId, Secret,
     Slot, SubmitError, Timestamp, UtcTime,
 };
+pub use history::{BolusKind, HistoryEntry, HistoryEvent};
 pub use therapy::{
-    Basal, Bolus, Extended, InsulinAmount, Percent, PumpMode, TherapyMachine, TherapyState,
-    Transition, TransitionError,
+    Basal, BasalProfile, BasalRate, BasalSegment, Bolus, Extended, InsulinAmount, Percent,
+    ProfileError, PumpMode, Quantity, TempBasalRate, TherapyMachine, TherapyState, Transition,
+    TransitionError, DAY,
 };
 
 pub const API_VERSION: u16 = 1;
