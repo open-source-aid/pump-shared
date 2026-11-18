@@ -112,3 +112,7 @@ Alarm kinds: `Occlusion`, `ReservoirLow`, `ReservoirEmpty`, `BatteryLow`, `Batte
 Stop paths are never refused for a missing feature or a pump state. `Resume` is only accepted from a suspended pump.
 
 A finished command reports an `Outcome`: `Completed(Report)`, `Refused(Refusal)` (nothing was sent), `Unknown` (something was sent and the result is not known; never retried) or `Failed(Failure)`. `Report` is `Done`, `Status(PumpStatus)`, `Clock(PumpTime)`, `Delivered(InsulinAmount)`, `Profile(BasalProfile)` or `History(Vec<HistoryEntry>)`.
+
+## Integrating
+
+Per-app differences the app-side adapter must handle: [AndroidAPS](integration/aaps.md), [Loop](integration/loop.md), [Trio](integration/trio.md).
