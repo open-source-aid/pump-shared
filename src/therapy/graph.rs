@@ -316,7 +316,7 @@ mod tests {
     #[test]
     fn exported_files_are_up_to_date() {
         let graph = Graph::standard();
-        assert_eq!(graph.to_mermaid(), include_str!("../../docs/therapy.mmd"));
-        assert_eq!(graph.to_dot(), include_str!("../../docs/therapy.dot"));
+        assert_eq!(graph.to_mermaid(), include_str!("../../.docs/therapy.mmd"));
+        assert_eq!(graph.to_dot(), include_str!("../../.docs/therapy.dot"));
     }
 }
