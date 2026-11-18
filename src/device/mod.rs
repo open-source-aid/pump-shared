@@ -4,7 +4,7 @@ mod info;
 mod limits;
 mod status;
 
-pub use ble::{BleOp, BleResult, Uuid};
+pub use ble::{BleOp, BleResult, Notification, NotifyKind, Uuid};
 pub use driver::{
     Advertisement, BleMatch, Config, Driver, DriverInfo, Feature, GattChar, Kind, Variant,
 };

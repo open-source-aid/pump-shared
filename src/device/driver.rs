@@ -1,7 +1,7 @@
 use alloc::boxed::Box;
 
 use crate::Engine;
-use crate::{Address, CommandKind};
+use crate::{Address, CommandKind, NotifyKind};
 use crate::{Class, Slot, Uuid};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -23,6 +23,7 @@ pub struct GattChar {
     pub name: &'static str,
     pub service: Uuid,
     pub characteristic: Uuid,
+    pub notify: Option<NotifyKind>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -60,6 +61,17 @@ impl DriverInfo {
 
     pub fn accepts(&self, kind: CommandKind) -> bool {
         self.commands.contains(&kind)
+    }
+
+    pub fn listens(&self, service: Uuid, characteristic: Uuid) -> Option<NotifyKind> {
+        self.gatt
+            .iter()
+            .find(|c| c.service == service && c.characteristic == characteristic)
+            .and_then(|c| c.notify)
+    }
+
+    pub fn listened(&self) -> impl Iterator<Item = &GattChar> {
+        self.gatt.iter().filter(|c| c.notify.is_some())
     }
 
     pub fn is_compatible(&self) -> bool {
@@ -113,6 +125,7 @@ mod tests {
     use super::*;
 
     const SERVICE: Uuid = Uuid::from_bytes([1; 16]);
+    const PROGRESS: Uuid = Uuid::from_bytes([2; 16]);
 
     const MATCH: BleMatch = BleMatch {
         name_prefixes: &["Pump_"],
@@ -153,7 +166,20 @@ mod tests {
         api_version: crate::API_VERSION,
         protocol: "test-v1",
         ble: MATCH,
-        gatt: &[],
+        gatt: &[
+            GattChar {
+                name: "status",
+                service: SERVICE,
+                characteristic: SERVICE,
+                notify: None,
+            },
+            GattChar {
+                name: "bolus progress",
+                service: SERVICE,
+                characteristic: PROGRESS,
+                notify: Some(NotifyKind::Indication),
+            },
+        ],
         variants: &[],
         commands: &[CommandKind::Status],
         features: &[
@@ -190,5 +216,17 @@ mod tests {
         assert!(!by_maker.matches(&found));
         found.manufacturer = Some((0x0123, &[]));
         assert!(by_maker.matches(&found));
+    }
+
+    #[test]
+    fn announces_what_it_listens_to() {
+        assert_eq!(
+            INFO.listens(SERVICE, PROGRESS),
+            Some(NotifyKind::Indication)
+        );
+        assert_eq!(INFO.listens(SERVICE, SERVICE), None);
+        assert_eq!(INFO.listens(PROGRESS, PROGRESS), None);
+        let listened: alloc::vec::Vec<_> = INFO.listened().map(|c| c.name).collect();
+        assert_eq!(listened, ["bolus progress"]);
     }
 }

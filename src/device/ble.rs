@@ -25,6 +25,19 @@ impl fmt::Display for Uuid {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum NotifyKind {
+    Notification,
+    Indication,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Notification {
+    pub service: Uuid,
+    pub characteristic: Uuid,
+    pub data: Vec<u8>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum BleOp {
     Connect {
@@ -41,6 +54,11 @@ pub enum BleOp {
         data: Vec<u8>,
     },
     Subscribe {
+        service: Uuid,
+        characteristic: Uuid,
+        kind: NotifyKind,
+    },
+    Unsubscribe {
         service: Uuid,
         characteristic: Uuid,
     },

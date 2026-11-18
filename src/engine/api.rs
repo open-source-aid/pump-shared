@@ -2,7 +2,7 @@ use alloc::boxed::Box;
 use alloc::string::String;
 use core::fmt;
 
-use crate::{Action, Completion};
+use crate::{Action, Completion, Notification};
 
 use crate::{
     Command, DeviceInfo, EngineState, InsulinAmount, Outcome, TherapyMachine, TherapyState,
@@ -131,6 +131,8 @@ pub trait Engine: TherapyMachine {
     fn handle_wall_clock(&mut self, now: UtcTime);
 
     fn handle_link_lost(&mut self);
+
+    fn handle_notification(&mut self, notification: Notification);
 
     fn poll_action(&mut self) -> Option<Action>;
 

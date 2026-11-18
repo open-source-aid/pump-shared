@@ -12,8 +12,8 @@ pub mod therapy;
 pub use command::{Command, CommandKind, Failure, Outcome, Refusal, Report};
 pub use device::{
     Address, Advertisement, BleMatch, BleOp, BleResult, Bounds, Capabilities, Config, DeviceInfo,
-    Driver, DriverInfo, EngineState, Feature, GattChar, Kind, Limits, PumpStatus, PumpTime,
-    Sequence, Tier, Uuid, Variant,
+    Driver, DriverInfo, EngineState, Feature, GattChar, Kind, Limits, Notification, NotifyKind,
+    PumpStatus, PumpTime, Sequence, Tier, Uuid, Variant,
 };
 pub use engine::{
     Action, Class, CommandId, Completion, CompletionError, Engine, Event, KeyRef, OpId, Secret,
