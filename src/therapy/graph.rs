@@ -73,26 +73,6 @@ impl Graph {
         out.push_str("    }\n");
         out
     }
-
-    pub fn to_dot(&self) -> String {
-        let mut out = String::from("digraph therapy {\n    rankdir=LR;\n");
-        for region in REGIONS {
-            let _ = writeln!(
-                out,
-                "    subgraph cluster_{region} {{\n        label=\"{region}\";"
-            );
-            for edge in self.edges.iter().filter(|e| e.region == region) {
-                let _ = writeln!(
-                    out,
-                    "        \"{region}.{}\" -> \"{region}.{}\" [label=\"{}\"];",
-                    edge.from, edge.to, edge.transition
-                );
-            }
-            out.push_str("    }\n");
-        }
-        out.push_str("}\n");
-        out
-    }
 }
 
 fn units(hundredths: u32) -> InsulinAmount {
@@ -269,14 +249,11 @@ mod tests {
     }
 
     #[test]
-    fn exports_mermaid_and_dot() {
+    fn exports_mermaid() {
         let graph = Graph::standard();
         let mermaid = graph.to_mermaid();
         assert!(mermaid.starts_with("stateDiagram-v2"));
         assert!(mermaid.contains("bolus_Idle --> bolus_Immediate : BolusStarted"));
-        let dot = graph.to_dot();
-        assert!(dot.starts_with("digraph therapy"));
-        assert!(dot.contains("\"bolus.Idle\" -> \"bolus.Immediate\" [label=\"BolusStarted\"]"));
     }
 
     struct NeverResumes(TherapyState);
@@ -315,8 +292,9 @@ mod tests {
 
     #[test]
     fn exported_files_are_up_to_date() {
-        let graph = Graph::standard();
-        assert_eq!(graph.to_mermaid(), include_str!("../../.docs/therapy.mmd"));
-        assert_eq!(graph.to_dot(), include_str!("../../.docs/therapy.dot"));
+        assert_eq!(
+            Graph::standard().to_mermaid(),
+            include_str!("../../.docs/therapy.mmd")
+        );
     }
 }
