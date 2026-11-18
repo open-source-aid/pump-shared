@@ -6,8 +6,6 @@ extern crate alloc;
 pub mod command;
 pub mod device;
 pub mod engine;
-#[cfg(feature = "testkit")]
-pub mod testkit;
 pub mod therapy;
 
 pub use command::{Command, CommandKind, Failure, Outcome, Refusal};
@@ -20,7 +18,7 @@ pub use engine::{
     Slot, SubmitError, Timestamp, UtcTime,
 };
 pub use therapy::{
-    Basal, Bolus, Extended, Graph, InsulinAmount, Percent, PumpMode, TherapyMachine, TherapyState,
+    Basal, Bolus, Extended, InsulinAmount, Percent, PumpMode, TherapyMachine, TherapyState,
     Transition, TransitionError,
 };
 
