@@ -25,5 +25,7 @@ pub use therapy::{
     ProfileError, PumpMode, Quantity, TempBasalRate, TherapyMachine, TherapyState, Transition,
     TransitionError, DAY,
 };
+#[cfg(feature = "graph")]
+pub use therapy::{Edge, Graph, Requirement};
 
 pub const API_VERSION: u16 = 1;

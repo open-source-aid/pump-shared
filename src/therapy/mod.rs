@@ -1,7 +1,11 @@
+#[cfg(feature = "graph")]
+mod graph;
 mod insulin;
 mod profile;
 mod state;
 
+#[cfg(feature = "graph")]
+pub use graph::{Edge, Graph, Requirement};
 pub use insulin::{BasalRate, InsulinAmount, Percent, Quantity, TempBasalRate};
 pub use profile::{BasalProfile, BasalSegment, ProfileError, DAY};
 pub use state::{

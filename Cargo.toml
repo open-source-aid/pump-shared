@@ -1,3 +1,6 @@
+[workspace]
+members = [".", "xtask"]
+
 [package]
 name = "pump-shared"
 version = "0.1.0"
@@ -12,6 +15,7 @@ categories = ["no-std", "embedded"]
 [features]
 default = ["std"]
 std = []
+graph = []
 
 [dependencies]
 zeroize = { version = "1", default-features = false, features = ["alloc"] }
