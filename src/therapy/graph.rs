@@ -1,4 +1,4 @@
-use alloc::collections::BTreeSet;
+use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::fmt::Write;
@@ -19,9 +19,17 @@ pub struct Edge {
     pub to: &'static str,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Requirement {
+    pub transition: &'static str,
+    pub region: &'static str,
+    pub state: &'static str,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct Graph {
     pub edges: BTreeSet<Edge>,
+    pub requirements: BTreeSet<Requirement>,
 }
 
 impl Graph {
@@ -31,6 +39,7 @@ impl Graph {
 
     pub fn explore<M: TherapyMachine>(make: impl Fn(TherapyState) -> M) -> Self {
         let mut edges = BTreeSet::new();
+        let mut accepted: BTreeMap<&'static str, Vec<[&'static str; 4]>> = BTreeMap::new();
         for from in sample_states() {
             for transition in sample_transitions() {
                 let mut machine = make(from);
@@ -39,6 +48,7 @@ impl Graph {
                 }
                 let to = *machine.therapy();
                 let (before, after) = (labels(&from), labels(&to));
+                accepted.entry(transition.name()).or_default().push(before);
                 for (i, moved) in changed(&from, &to).into_iter().enumerate() {
                     if moved {
                         edges.insert(Edge {
@@ -51,7 +61,69 @@ impl Graph {
                 }
             }
         }
-        Self { edges }
+        let requirements = accepted
+            .iter()
+            .flat_map(|(transition, froms)| {
+                (0..REGIONS.len()).filter_map(move |i| {
+                    let state = froms[0][i];
+                    froms
+                        .iter()
+                        .all(|from| from[i] == state)
+                        .then_some(Requirement {
+                            transition,
+                            region: REGIONS[i],
+                            state,
+                        })
+                })
+            })
+            .collect();
+        Self {
+            edges,
+            requirements,
+        }
+    }
+
+    pub fn to_overview_mermaid(&self) -> String {
+        let mut out = String::from("flowchart LR\n");
+        let states = sample_states();
+        for (i, region) in REGIONS.iter().enumerate() {
+            let mut names: Vec<&str> = Vec::new();
+            for state in &states {
+                let name = labels(state)[i];
+                if !names.contains(&name) {
+                    names.push(name);
+                }
+            }
+            let _ = writeln!(
+                out,
+                "    r_{region}[\"{region}<br/>{}\"]",
+                names.join(" · ")
+            );
+        }
+        for transition in sample_transitions().map(|t| t.name()) {
+            let _ = writeln!(out, "    t_{transition}([{transition}])");
+            for need in self
+                .requirements
+                .iter()
+                .filter(|r| r.transition == transition)
+            {
+                let _ = writeln!(
+                    out,
+                    "    r_{} -. {} .-> t_{transition}",
+                    need.region, need.state
+                );
+            }
+            let touched: BTreeSet<_> = self
+                .edges
+                .iter()
+                .filter(|e| e.transition == transition)
+                .map(|e| e.region)
+                .collect();
+            for region in REGIONS.iter().filter(|r| touched.contains(*r)) {
+                let _ = writeln!(out, "    t_{transition} --> r_{region}");
+            }
+        }
+        out
     }
 
     pub fn to_mermaid(&self) -> String {
@@ -290,8 +362,51 @@ mod tests {
             .contains(&edge("mode", "Suspended", "Resumed", "Running")));
     }
 
+    fn requirement(
+        transition: &'static str,
+        region: &'static str,
+        state: &'static str,
+    ) -> Requirement {
+        Requirement {
+            transition,
+            region,
+            state,
+        }
+    }
+
+    #[test]
+    fn finds_what_each_transition_requires() {
+        let graph = Graph::standard();
+        assert!(graph
+            .requirements
+            .contains(&requirement("BolusStarted", "mode", "Running")));
+        assert!(graph
+            .requirements
+            .contains(&requirement("BolusStarted", "bolus", "Idle")));
+        assert!(graph
+            .requirements
+            .contains(&requirement("Resumed", "mode", "Suspended")));
+        assert!(!graph
+            .requirements
+            .iter()
+            .any(|r| r.transition == "Suspended"));
+    }
+
+    #[test]
+    fn overview_links_regions_and_transitions() {
+        let overview = Graph::standard().to_overview_mermaid();
+        assert!(overview.starts_with("flowchart LR"));
+        assert!(overview.contains("r_mode[\"mode<br/>Unknown · Off · Suspended · Running\"]"));
+        assert!(overview.contains("r_mode -. Running .-> t_BolusStarted"));
+        assert!(overview.contains("t_BolusStarted --> r_bolus"));
+    }
+
     #[test]
     fn exported_files_are_up_to_date() {
+        assert_eq!(
+            Graph::standard().to_overview_mermaid(),
+            include_str!("../../.docs/therapy-overview.mmd")
+        );
         assert_eq!(
             Graph::standard().to_mermaid(),
             include_str!("../../.docs/therapy.mmd")

@@ -23,6 +23,11 @@ fn main() -> ExitCode {
 fn graphs() -> io::Result<()> {
     let out = Path::new(env!("CARGO_MANIFEST_DIR")).join("../.docs");
     fs::create_dir_all(&out)?;
-    fs::write(out.join("therapy.mmd"), Graph::standard().to_mermaid())?;
+    let graph = Graph::standard();
+    fs::write(out.join("therapy.mmd"), graph.to_mermaid())?;
+    fs::write(
+        out.join("therapy-overview.mmd"),
+        graph.to_overview_mermaid(),
+    )?;
     Ok(())
 }
