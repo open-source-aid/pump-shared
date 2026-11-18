@@ -10,6 +10,8 @@ pub mod history;
 pub mod therapy;
 
 pub use command::{Command, CommandKind, Failure, Outcome, Refusal, Report};
+#[cfg(feature = "sim")]
+pub use device::SimDevice;
 pub use device::{
     Address, Advertisement, BleMatch, BleOp, BleResult, Bounds, Capabilities, Config, DeviceInfo,
     Driver, DriverInfo, EngineState, Feature, GattChar, Kind, Limits, Notification, NotifyKind,

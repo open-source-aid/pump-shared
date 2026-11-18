@@ -16,6 +16,7 @@ categories = ["no-std", "embedded"]
 default = ["std"]
 std = []
 graph = []
+sim = []
 
 [dependencies]
 zeroize = { version = "1", default-features = false, features = ["alloc"] }
