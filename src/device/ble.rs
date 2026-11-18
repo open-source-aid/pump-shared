@@ -26,7 +26,6 @@ impl fmt::Display for Uuid {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[non_exhaustive]
 pub enum BleOp {
     Connect {
         address: Address,

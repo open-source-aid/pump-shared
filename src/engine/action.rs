@@ -4,7 +4,6 @@ use crate::OpId;
 use crate::{BleOp, BleResult, Class, KeyRef, Secret, Slot};
 
 #[derive(Debug)]
-#[non_exhaustive]
 pub enum Action {
     Ble {
         id: OpId,
@@ -59,7 +58,6 @@ impl Action {
 }
 
 #[derive(Debug)]
-#[non_exhaustive]
 pub enum Completion {
     Ble(BleResult),
     Stored,

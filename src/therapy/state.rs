@@ -98,6 +98,47 @@ impl TransitionError {
     }
 }
 
+impl PumpMode {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Unknown => "Unknown",
+            Self::Off => "Off",
+            Self::Suspended => "Suspended",
+            Self::Running => "Running",
+        }
+    }
+}
+
+impl Basal {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Unknown => "Unknown",
+            Self::Scheduled => "Scheduled",
+            Self::Temporary { .. } => "Temporary",
+        }
+    }
+}
+
+impl Bolus {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Unknown => "Unknown",
+            Self::Idle => "Idle",
+            Self::Immediate { .. } => "Immediate",
+        }
+    }
+}
+
+impl Extended {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Unknown => "Unknown",
+            Self::Idle => "Idle",
+            Self::Running { .. } => "Running",
+        }
+    }
+}
+
 impl Transition {
     pub fn name(&self) -> &'static str {
         match self {
@@ -533,5 +574,53 @@ mod tests {
         assert_eq!(TherapyMachine::guard(&state, &Command::Status), Ok(()));
         TherapyMachine::apply(&mut state, Transition::Suspended).unwrap();
         assert_eq!(TherapyMachine::therapy(&state).mode, PumpMode::Suspended);
+    }
+
+    #[test]
+    fn every_region_state_has_a_name() {
+        let hour = Duration::from_secs(3600);
+        let modes = [
+            PumpMode::Unknown,
+            PumpMode::Off,
+            PumpMode::Suspended,
+            PumpMode::Running,
+        ];
+        assert_eq!(
+            modes.map(PumpMode::name),
+            ["Unknown", "Off", "Suspended", "Running"]
+        );
+        let basals = [
+            Basal::Unknown,
+            Basal::Scheduled,
+            Basal::Temporary {
+                rate: Percent::new(150),
+                duration: hour,
+            },
+        ];
+        assert_eq!(
+            basals.map(Basal::name),
+            ["Unknown", "Scheduled", "Temporary"]
+        );
+        let boluses = [
+            Bolus::Unknown,
+            Bolus::Idle,
+            Bolus::Immediate {
+                requested: units(1),
+                delivered: units(0),
+            },
+        ];
+        assert_eq!(boluses.map(Bolus::name), ["Unknown", "Idle", "Immediate"]);
+        let extendeds = [
+            Extended::Unknown,
+            Extended::Idle,
+            Extended::Running {
+                amount: units(1),
+                duration: hour,
+            },
+        ];
+        assert_eq!(
+            extendeds.map(Extended::name),
+            ["Unknown", "Idle", "Running"]
+        );
     }
 }
