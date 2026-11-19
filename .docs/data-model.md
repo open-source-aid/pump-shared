@@ -95,6 +95,7 @@ Each `HistoryEntry` holds `sequence` (the pump's own number), `time` (UTC), `pum
 | `ClockChanged` | `previous` pump time |
 | `Alarm` / `AlarmCleared` | `Alarm { kind, code }`: normalised kind plus the pump's raw code |
 | `DailyTotal` | `day`, `amount` |
+| `LimitChanged` | `LimitChange`: `MaxBolus { value, previous }` (`InsulinAmount`), `MaxBasal { value, previous }` (`BasalRate`), `BolusStep { value }` (`InsulinAmount`) |
 
 Alarm kinds: `Occlusion`, `ReservoirLow`, `ReservoirEmpty`, `BatteryLow`, `BatteryEmpty`, `AutoOff`, `NoDelivery`, `Other`.
 

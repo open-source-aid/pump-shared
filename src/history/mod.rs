@@ -3,7 +3,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::time::Duration;
 
-use crate::{InsulinAmount, PumpTime, Sequence, TempBasalRate, UtcTime};
+use crate::{BasalRate, InsulinAmount, PumpTime, Sequence, TempBasalRate, UtcTime};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -35,6 +35,22 @@ pub enum AlarmKind {
     AutoOff,
     NoDelivery,
     Other,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum LimitChange {
+    MaxBolus {
+        value: InsulinAmount,
+        previous: InsulinAmount,
+    },
+    MaxBasal {
+        value: BasalRate,
+        previous: BasalRate,
+    },
+    BolusStep {
+        value: InsulinAmount,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -76,6 +92,7 @@ pub enum HistoryEvent {
         day: PumpTime,
         amount: InsulinAmount,
     },
+    LimitChanged(LimitChange),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

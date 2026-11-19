@@ -21,7 +21,9 @@ pub use engine::{
     Action, Class, CommandId, Completion, CompletionError, Engine, Event, KeyRef, OpId, Secret,
     Slot, SubmitError, Timestamp, UtcTime,
 };
-pub use history::{Alarm, AlarmKind, BolusKind, Component, HistoryEntry, HistoryEvent};
+pub use history::{
+    Alarm, AlarmKind, BolusKind, Component, HistoryEntry, HistoryEvent, LimitChange,
+};
 pub use therapy::{
     Basal, BasalProfile, BasalRate, BasalSegment, Bolus, Extended, InsulinAmount, Percent,
     ProfileError, PumpMode, Quantity, TempBasalRate, TherapyMachine, TherapyState, Transition,
