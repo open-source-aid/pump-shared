@@ -12,6 +12,15 @@ pub enum BolusKind {
     Smb,
     Priming,
     Extended,
+    Combined,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum TempBasalPhase {
+    Started,
+    Running,
+    Ended,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -76,8 +85,8 @@ pub enum HistoryEvent {
     TempBasal {
         rate: TempBasalRate,
         duration: Duration,
+        phase: TempBasalPhase,
     },
-    TempBasalEnded,
     Suspended,
     Resumed,
     BasalProfileChanged,
@@ -113,6 +122,31 @@ impl HistoryEntry {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn combined_is_distinct_from_extended() {
+        assert_ne!(BolusKind::Combined, BolusKind::Extended);
+    }
+
+    #[test]
+    fn temp_basal_carries_its_phase() {
+        for phase in [
+            TempBasalPhase::Started,
+            TempBasalPhase::Running,
+            TempBasalPhase::Ended,
+        ] {
+            let event = HistoryEvent::TempBasal {
+                rate: TempBasalRate::Percent(crate::Percent::NEUTRAL),
+                duration: Duration::from_secs(1_800),
+                phase,
+            };
+            assert!(matches!(
+                event,
+                HistoryEvent::TempBasal { phase: p, .. } if p == phase
+            ));
+        }
+        assert_ne!(TempBasalPhase::Started, TempBasalPhase::Ended);
+    }
 
     #[test]
     fn sync_id_combines_serial_and_sequence() {

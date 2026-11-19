@@ -9,7 +9,7 @@ pub mod engine;
 pub mod history;
 pub mod therapy;
 
-pub use command::{Command, CommandKind, Failure, Outcome, Refusal, Report};
+pub use command::{Approximation, Command, CommandKind, Failure, Outcome, Refusal, Report};
 #[cfg(feature = "sim")]
 pub use device::SimDevice;
 pub use device::{
@@ -22,7 +22,7 @@ pub use engine::{
     Slot, SubmitError, Timestamp, UtcTime,
 };
 pub use history::{
-    Alarm, AlarmKind, BolusKind, Component, HistoryEntry, HistoryEvent, LimitChange,
+    Alarm, AlarmKind, BolusKind, Component, HistoryEntry, HistoryEvent, LimitChange, TempBasalPhase,
 };
 pub use therapy::{
     Basal, BasalProfile, BasalRate, BasalSegment, Bolus, Extended, InsulinAmount, Percent,

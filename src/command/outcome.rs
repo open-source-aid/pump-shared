@@ -1,14 +1,30 @@
 use core::fmt;
+use core::time::Duration;
 
-use crate::Report;
+use crate::{BasalRate, InsulinAmount, Report};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Outcome {
     Completed(Report),
+    Approximated(Approximation),
     Refused(Refusal),
     Unknown,
     Failed(Failure),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Approximation {
+    Bolus {
+        requested: InsulinAmount,
+        delivered: InsulinAmount,
+        duration: Duration,
+    },
+    Basal {
+        requested: BasalRate,
+        achieved: BasalRate,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -81,6 +97,38 @@ mod tests {
         for refusal in refusals {
             assert!(!refusal.to_string().is_empty());
         }
+    }
+
+    #[test]
+    fn approximation_separates_bolus_and_basal() {
+        let bolus = Approximation::Bolus {
+            requested: InsulinAmount::from_milliunits(2_000),
+            delivered: InsulinAmount::from_milliunits(1_850),
+            duration: Duration::from_secs(1_800),
+        };
+        let basal = Approximation::Basal {
+            requested: BasalRate::from_milliunits_per_hour(1_500),
+            achieved: BasalRate::from_milliunits_per_hour(1_480),
+        };
+        assert_eq!(bolus, bolus);
+        assert_eq!(basal, basal);
+        assert_ne!(bolus, basal);
+        assert_ne!(
+            bolus,
+            Approximation::Bolus {
+                requested: InsulinAmount::from_milliunits(2_000),
+                delivered: InsulinAmount::from_milliunits(2_000),
+                duration: Duration::from_secs(1_800),
+            }
+        );
+        assert_ne!(
+            basal,
+            Approximation::Basal {
+                requested: BasalRate::from_milliunits_per_hour(1_500),
+                achieved: BasalRate::from_milliunits_per_hour(1_500),
+            }
+        );
+        assert_ne!(Outcome::Approximated(bolus), Outcome::Approximated(basal));
     }
 
     #[test]

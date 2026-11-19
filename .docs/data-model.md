@@ -85,9 +85,9 @@ Each `HistoryEntry` holds `sequence` (the pump's own number), `time` (UTC), `pum
 
 | Event | Fields |
 |---|---|
-| `Bolus` | `kind` (`Normal`, `Smb`, `Priming`, `Extended`), `requested`, `delivered`, `duration`, `automatic`, `in_progress` |
+| `Bolus` | `kind` (`Normal`, `Smb`, `Priming`, `Extended`, `Combined`), `requested`, `delivered`, `duration`, `automatic`, `in_progress` |
 | `ExtendedBolusEnded` | `delivered` |
-| `TempBasal` / `TempBasalEnded` | `rate`, `duration` |
+| `TempBasal` | `rate`, `duration`, `phase` (`TempBasalPhase`: `Started`, `Running`, `Ended`) |
 | `Suspended` / `Resumed` | |
 | `BasalProfileChanged` | |
 | `Rewound` | |
@@ -112,7 +112,9 @@ Alarm kinds: `Occlusion`, `ReservoirLow`, `ReservoirEmpty`, `BatteryLow`, `Batte
 
 Stop paths are never refused for a missing feature or a pump state. `Resume` is only accepted from a suspended pump.
 
-A finished command reports an `Outcome`: `Completed(Report)`, `Refused(Refusal)` (nothing was sent), `Unknown` (something was sent and the result is not known; never retried) or `Failed(Failure)`. `Report` is `Done`, `Status(PumpStatus)`, `Clock(PumpTime)`, `Delivered(InsulinAmount)`, `Profile(BasalProfile)` or `History(Vec<HistoryEntry>)`.
+A finished command reports an `Outcome`: `Completed(Report)`, `Approximated(Approximation)` (carried out, but not exactly as requested), `Refused(Refusal)` (nothing was sent), `Unknown` (something was sent and the result is not known; never retried) or `Failed(Failure)`. `Report` is `Done`, `Status(PumpStatus)`, `Clock(PumpTime)`, `Delivered(InsulinAmount)`, `Profile(BasalProfile)` or `History(Vec<HistoryEntry>)`.
+
+`Approximation` carries both what was requested and what was programmed, so the app sees the direction and size of the gap: `Bolus { requested, delivered, duration }` (both `InsulinAmount`) for a rate-controlled bolus, and `Basal { requested, achieved }` (both `BasalRate`) for an absolute temp basal.
 
 ## Integrating
 
