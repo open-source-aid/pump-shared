@@ -186,7 +186,9 @@ impl TherapyState {
             return Err(Refusal::NotRunning);
         }
         match command {
-            Command::Bolus { .. } if self.bolus != Bolus::Idle => Err(Refusal::Busy),
+            Command::Bolus { .. } | Command::RateBolus { .. } if self.bolus != Bolus::Idle => {
+                Err(Refusal::Busy)
+            }
             Command::ExtendedBolus { .. } if self.extended != Extended::Idle => Err(Refusal::Busy),
             _ => Ok(()),
         }
@@ -338,6 +340,13 @@ mod tests {
             .unwrap();
         assert_eq!(
             state.guard(&Command::Bolus { amount: units(50) }),
+            Err(Refusal::Busy)
+        );
+        assert_eq!(
+            state.guard(&Command::RateBolus {
+                amount: units(50),
+                duration: Duration::from_secs(900),
+            }),
             Err(Refusal::Busy)
         );
         state

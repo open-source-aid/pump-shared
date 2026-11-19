@@ -15,6 +15,10 @@ pub enum Command {
     Bolus {
         amount: InsulinAmount,
     },
+    RateBolus {
+        amount: InsulinAmount,
+        duration: Duration,
+    },
     TempBasal {
         rate: TempBasalRate,
         duration: Duration,
@@ -49,6 +53,7 @@ pub enum CommandKind {
     Pair,
     Unpair,
     Bolus,
+    RateBolus,
     TempBasal,
     CancelTempBasal,
     ExtendedBolus,
@@ -71,6 +76,7 @@ impl Command {
             Self::Pair { .. } => CommandKind::Pair,
             Self::Unpair => CommandKind::Unpair,
             Self::Bolus { .. } => CommandKind::Bolus,
+            Self::RateBolus { .. } => CommandKind::RateBolus,
             Self::TempBasal { .. } => CommandKind::TempBasal,
             Self::CancelTempBasal => CommandKind::CancelTempBasal,
             Self::ExtendedBolus { .. } => CommandKind::ExtendedBolus,
@@ -97,6 +103,7 @@ impl Command {
     pub fn delivers_insulin(&self) -> bool {
         match self {
             Self::Bolus { .. }
+            | Self::RateBolus { .. }
             | Self::ExtendedBolus { .. }
             | Self::SetBasalProfile { .. }
             | Self::Resume => true,
@@ -147,6 +154,13 @@ mod tests {
             (Command::Unpair, CommandKind::Unpair),
             (Command::Bolus { amount }, CommandKind::Bolus),
             (
+                Command::RateBolus {
+                    amount,
+                    duration: hour,
+                },
+                CommandKind::RateBolus,
+            ),
+            (
                 Command::TempBasal {
                     rate: TempBasalRate::Percent(Percent::new(120)),
                     duration: hour,
@@ -177,6 +191,17 @@ mod tests {
         for (command, kind) in cases {
             assert_eq!(command.kind(), kind);
         }
+    }
+
+    #[test]
+    fn rate_bolus_delivers_insulin() {
+        let rate_bolus = Command::RateBolus {
+            amount: InsulinAmount::from_milliunits(3_000),
+            duration: Duration::from_secs(1_800),
+        };
+        assert!(rate_bolus.delivers_insulin());
+        assert!(!rate_bolus.is_stop_path());
+        assert_eq!(rate_bolus.kind(), CommandKind::RateBolus);
     }
 
     #[test]

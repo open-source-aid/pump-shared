@@ -106,6 +106,7 @@ Alarm kinds: `Occlusion`, `ReservoirLow`, `ReservoirEmpty`, `BatteryLow`, `Batte
 | `Status`, `ReadClock`, `ReadHistory { after }`, `ReadBasalProfile` | no | |
 | `Pair`, `Unpair`, `SyncClock`, `SetDeliveryLimits { max_bolus, max_basal }` | no | |
 | `Bolus { amount }`, `ExtendedBolus { amount, duration }` | yes | |
+| `RateBolus { amount, duration }` | yes | |
 | `TempBasal { rate, duration }` | yes, unless 100 % | 100 % is |
 | `SetBasalProfile { profile }`, `Resume` | yes | |
 | `CancelTempBasal`, `CancelExtendedBolus`, `Suspend` | no | yes |
@@ -115,6 +116,8 @@ Stop paths are never refused for a missing feature or a pump state. `Resume` is 
 A finished command reports an `Outcome`: `Completed(Report)`, `Approximated(Approximation)` (carried out, but not exactly as requested), `Refused(Refusal)` (nothing was sent), `Unknown` (something was sent and the result is not known; never retried) or `Failed(Failure)`. `Report` is `Done`, `Status(PumpStatus)`, `Clock(PumpTime)`, `Delivered(InsulinAmount)`, `Profile(BasalProfile)` or `History(Vec<HistoryEntry>)`.
 
 `Approximation` carries both what was requested and what was programmed, so the app sees the direction and size of the gap: `Bolus { requested, delivered, duration }` (both `InsulinAmount`) for a rate-controlled bolus, and `Basal { requested, achieved }` (both `BasalRate`) for an absolute temp basal.
+
+`RateBolus { amount, duration }` asks for a total `amount` spread over `duration` at a controlled rate, delivered as a sequence of small immediate boluses. It completes with `Delivered` when the whole total lands exactly, and with `Approximated(Bolus { requested, delivered, duration })` when the sequence delivers a different total (for example a request that is not a multiple of the bolus step, or a sequence cut short).
 
 ## Integrating
 
