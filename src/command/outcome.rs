@@ -1,7 +1,7 @@
 use core::fmt;
 use core::time::Duration;
 
-use crate::{BasalRate, InsulinAmount, Report};
+use crate::{InsulinAmount, Report};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -20,10 +20,6 @@ pub enum Approximation {
         requested: InsulinAmount,
         delivered: InsulinAmount,
         duration: Duration,
-    },
-    Basal {
-        requested: BasalRate,
-        achieved: BasalRate,
     },
 }
 
@@ -100,19 +96,13 @@ mod tests {
     }
 
     #[test]
-    fn approximation_separates_bolus_and_basal() {
+    fn an_approximated_bolus_carries_the_shortfall() {
         let bolus = Approximation::Bolus {
             requested: InsulinAmount::from_milliunits(2_000),
             delivered: InsulinAmount::from_milliunits(1_850),
             duration: Duration::from_secs(1_800),
         };
-        let basal = Approximation::Basal {
-            requested: BasalRate::from_milliunits_per_hour(1_500),
-            achieved: BasalRate::from_milliunits_per_hour(1_480),
-        };
         assert_eq!(bolus, bolus);
-        assert_eq!(basal, basal);
-        assert_ne!(bolus, basal);
         assert_ne!(
             bolus,
             Approximation::Bolus {
@@ -121,14 +111,7 @@ mod tests {
                 duration: Duration::from_secs(1_800),
             }
         );
-        assert_ne!(
-            basal,
-            Approximation::Basal {
-                requested: BasalRate::from_milliunits_per_hour(1_500),
-                achieved: BasalRate::from_milliunits_per_hour(1_500),
-            }
-        );
-        assert_ne!(Outcome::Approximated(bolus), Outcome::Approximated(basal));
+        assert_eq!(Outcome::Approximated(bolus), Outcome::Approximated(bolus));
     }
 
     #[test]
