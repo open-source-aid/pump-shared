@@ -305,6 +305,7 @@ impl TherapyMachine for TherapyState {
 mod tests {
     use super::*;
     use crate::Percent;
+    use alloc::string::ToString;
 
     fn running() -> TherapyState {
         TherapyState {

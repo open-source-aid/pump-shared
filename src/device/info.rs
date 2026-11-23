@@ -58,6 +58,7 @@ pub struct DeviceInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::string::ToString;
 
     #[test]
     fn displays_address_as_colon_hex() {
