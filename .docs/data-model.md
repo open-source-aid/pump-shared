@@ -62,6 +62,25 @@ A driver refuses a value that `allows` rejects (`Refusal::OutOfLimits`); it neve
 
 `Capabilities` adds what does not fit a range: reservoir capacity, maximum profile segments, minimum segment duration, whether the pump keeps history and daily totals, and whether it is a patch pump. `DeviceInfo` carries both, with serial, firmware and variant.
 
+## Nominal limits, before a device exists
+
+`Limits` and `Capabilities` come **from a device**, so they arrive with `DeviceInfo`, after a connect. A setup screen is drawn before that. `DriverInfo.nominal` answers it from a `const`: `Nominal { limits: NominalLimits, capabilities: NominalCapabilities }`, what the *family* is built for.
+
+| | Actual | Nominal |
+|---|---|---|
+| Type | `Limits` / `Capabilities` | `NominalLimits` / `NominalCapabilities` |
+| Grid | `Bounds<T>` (owned) | `NominalBounds<T>` (`&'static [Tier<T>]`) |
+| Source | the connected device | the driver, at compile time |
+| Reached through | `DeviceInfo` | `DriverInfo.nominal`, `DriverInfo::nominal_for(variant)` |
+| Verbs | `allows`, `floor`, `nearest`, `values` | `values` only (`grid`, shared with `Bounds::values`, is enumeration, not a decision) |
+| Use | validating and rounding a dose | populating a picker |
+
+**Nominal is never a validation input.** A device is narrower than its family — the bolus step and the maximum bolus are user settings on the pump, extended bolus may be absent in firmware — so a dose checked against a nominal ceiling is a command the device will refuse, and a dose rounded to a nominal step is a dose the app logged wrong. Nothing converts between the two families of types: there is no `From`, no `to_limits()`, no `to_bounds()`, and `NominalBounds` has no `allows`, `floor` or `nearest`. An app rounds with `Bounds` from `DeviceInfo`, or it does not round.
+
+Every measurement in `NominalLimits` and `NominalCapabilities` is an `Option`, including the ones that are mandatory on a device: a driver author declares only what the driver's own documentation evidences, and leaves the rest absent. `Nominal::default()` declares nothing, which is what a driver that has measured nothing says.
+
+`DriverInfo.nominal` is the family. A family whose models differ — a larger cartridge, a lower ceiling — overrides it per model with `Variant.nominal`, which a host resolves with `DriverInfo::nominal_for(variant)`; `None` there means "as the family", not "unknown". A variant is known from the advertisement alone (`Driver::matches`), before any connect, so this is still answerable on a setup screen.
+
 ## Status
 
 `PumpStatus` is a snapshot:

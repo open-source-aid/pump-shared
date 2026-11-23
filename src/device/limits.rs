@@ -17,6 +17,21 @@ pub struct Bounds<T> {
     pub tiers: Vec<Tier<T>>,
 }
 
+/// The step that applies to `raw`: the one of the last tier whose `from` is at
+/// or below it. A zero step is no step at all, so it allows nothing.
+///
+/// Shared by [`Bounds`] (what a connected device accepts) and
+/// [`NominalBounds`](crate::NominalBounds) (what the family is built for), so
+/// the two read the same tier table the same way.
+pub(crate) fn step_at<T: Quantity>(tiers: &[Tier<T>], raw: u64) -> Option<u64> {
+    tiers
+        .iter()
+        .rev()
+        .find(|tier| tier.from.raw() <= raw)
+        .map(|tier| tier.step.raw())
+        .filter(|step| *step != 0)
+}
+
 impl<T: Quantity> Bounds<T> {
     pub fn uniform(min: T, max: T, step: T) -> Self {
         Self {
@@ -27,12 +42,7 @@ impl<T: Quantity> Bounds<T> {
     }
 
     fn step_at(&self, raw: u64) -> Option<u64> {
-        self.tiers
-            .iter()
-            .rev()
-            .find(|tier| tier.from.raw() <= raw)
-            .map(|tier| tier.step.raw())
-            .filter(|step| *step != 0)
+        step_at(&self.tiers, raw)
     }
 
     pub fn allows(&self, value: T) -> bool {
@@ -61,20 +71,7 @@ impl<T: Quantity> Bounds<T> {
     }
 
     pub fn values(&self) -> Vec<T> {
-        let mut values = Vec::new();
-        let mut raw = self.min.raw();
-        while raw <= self.max.raw() {
-            let Some(step) = self.step_at(raw) else {
-                break;
-            };
-            if raw % step == 0 {
-                values.push(T::from_raw(raw));
-                raw += step;
-            } else {
-                raw += step - raw % step;
-            }
-        }
-        values
+        crate::device::nominal::grid(self.min, self.max, &self.tiers)
     }
 }
 

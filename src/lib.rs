@@ -13,9 +13,10 @@ pub use command::{Approximation, Command, CommandKind, Failure, Outcome, Refusal
 #[cfg(feature = "sim")]
 pub use device::SimDevice;
 pub use device::{
-    Address, Advertisement, BleMatch, BleOp, BleResult, Bounds, Capabilities, Config, DeviceInfo,
-    Driver, DriverInfo, EngineState, Feature, GattChar, Kind, Limits, Notification, NotifyKind,
-    PumpStatus, PumpTime, Sequence, Tier, Uuid, Variant,
+    grid, Address, Advertisement, BleMatch, BleOp, BleResult, Bounds, Capabilities, Config,
+    DeviceInfo, Driver, DriverInfo, EngineState, Feature, GattChar, Kind, Limits, Nominal,
+    NominalBounds, NominalCapabilities, NominalLimits, Notification, NotifyKind, PumpStatus,
+    PumpTime, Sequence, Tier, Uuid, Variant,
 };
 pub use engine::{
     Action, Class, CommandId, Completion, CompletionError, Engine, Event, KeyRef, OpId, Secret,
@@ -32,4 +33,4 @@ pub use therapy::{
 #[cfg(feature = "graph")]
 pub use therapy::{Edge, Graph, Requirement};
 
-pub const API_VERSION: u16 = 2;
+pub const API_VERSION: u16 = 3;

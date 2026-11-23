@@ -1,6 +1,7 @@
 use alloc::boxed::Box;
 
 use crate::Engine;
+use crate::Nominal;
 use crate::{Address, CommandKind, NotifyKind};
 use crate::{Class, Slot, Uuid};
 
@@ -26,10 +27,18 @@ pub struct GattChar {
     pub notify: Option<NotifyKind>,
 }
 
+/// One model inside the family a driver covers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Variant {
     pub id: &'static str,
     pub name: &'static str,
+    /// What this model, specifically, is built for — when it differs from the
+    /// family's [`DriverInfo::nominal`]. `None` means the family's figures
+    /// hold for this model too.
+    ///
+    /// Read it through [`DriverInfo::nominal_for`], never directly: a `None`
+    /// here means "the same as the family", not "nothing is known".
+    pub nominal: Option<&'static Nominal>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -52,6 +61,12 @@ pub struct DriverInfo {
     pub commands: &'static [CommandKind],
     pub features: &'static [Feature],
     pub slots: &'static [(Slot, Class)],
+    /// What the device family is built for, before any device is connected:
+    /// the grid to draw a setup screen from. **Not** what a connected device
+    /// accepts — that is [`DeviceInfo::limits`](crate::DeviceInfo), read from
+    /// the device itself, and the only thing a dose may be checked against.
+    /// See [`Nominal`].
+    pub nominal: Nominal,
 }
 
 impl DriverInfo {
@@ -72,6 +87,12 @@ impl DriverInfo {
 
     pub fn listened(&self) -> impl Iterator<Item = &GattChar> {
         self.gatt.iter().filter(|c| c.notify.is_some())
+    }
+
+    /// The nominal declaration that applies to `variant`: the model's own
+    /// when it has one, the family's otherwise.
+    pub fn nominal_for(&self, variant: &Variant) -> &Nominal {
+        variant.nominal.unwrap_or(&self.nominal)
     }
 
     pub fn is_compatible(&self) -> bool {
@@ -193,7 +214,65 @@ mod tests {
             },
         ],
         slots: &[(Slot::Counters, Class::Monotonic)],
+        nominal: FAMILY,
     };
+
+    const FAMILY: crate::Nominal = crate::Nominal {
+        limits: crate::NominalLimits {
+            bolus: Some(crate::NominalBounds {
+                min: crate::InsulinAmount::from_milliunits(50),
+                max: crate::InsulinAmount::from_milliunits(10_000),
+                tiers: &[crate::Tier {
+                    from: crate::InsulinAmount::ZERO,
+                    step: crate::InsulinAmount::from_milliunits(50),
+                }],
+            }),
+            basal: None,
+            temp_basal_percent: None,
+            temp_basal_absolute: None,
+            temp_basal_duration: None,
+            extended_bolus_duration: None,
+        },
+        capabilities: crate::NominalCapabilities {
+            reservoir_capacity: None,
+            max_profile_segments: Some(24),
+            min_segment_duration: None,
+            history: true,
+            daily_totals: false,
+            patch: false,
+        },
+    };
+
+    static SMALL: crate::Nominal = crate::Nominal {
+        capabilities: crate::NominalCapabilities {
+            reservoir_capacity: Some(crate::InsulinAmount::from_milliunits(100_000)),
+            ..FAMILY.capabilities
+        },
+        ..FAMILY
+    };
+
+    #[test]
+    fn a_model_without_figures_of_its_own_inherits_the_family() {
+        let plain = Variant {
+            id: "plain",
+            name: "Plain",
+            nominal: None,
+        };
+        let small = Variant {
+            id: "small",
+            name: "Small",
+            nominal: Some(&SMALL),
+        };
+        assert_eq!(INFO.nominal_for(&plain), &FAMILY);
+        assert_eq!(
+            INFO.nominal_for(&small).capabilities.reservoir_capacity,
+            Some(crate::InsulinAmount::from_milliunits(100_000))
+        );
+        assert_eq!(
+            INFO.nominal_for(&small).limits,
+            INFO.nominal_for(&plain).limits
+        );
+    }
 
     #[test]
     fn describes_compiled_features_and_commands() {
