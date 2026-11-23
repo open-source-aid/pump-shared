@@ -32,4 +32,4 @@ pub use therapy::{
 #[cfg(feature = "graph")]
 pub use therapy::{Edge, Graph, Requirement};
 
-pub const API_VERSION: u16 = 1;
+pub const API_VERSION: u16 = 2;

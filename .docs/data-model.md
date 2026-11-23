@@ -7,6 +7,7 @@ The types every driver reports and every app reads. Drivers convert their pump's
 - **Integers in the smallest unit, no floating point.** Doses are never rounded silently.
 - **One shared model, extended per pump.** Every report keeps the pump's raw bytes; a driver crate may offer a typed decoder for its own details.
 - **Unknown is `None`.** A field a pump cannot report is absent, never guessed.
+- **`Secret` is for secret material only.** Keys, session material and derived shared secrets travel as `Secret` (zeroised on drop, redacted by `Debug`). Material that is meant to go on the wire is plain bytes: the public half of a host-held key comes back as `Completion::PublicKey([u8; 32])`, answering `Action::PublicKey { key }`.
 - **Data enums are `#[non_exhaustive]`.** Apps keep compiling when a pump adds an event. Host-contract enums (`Action`, `Completion`, `BleOp`) are exhaustive on purpose: a new action must be handled.
 
 ## Units
