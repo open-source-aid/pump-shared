@@ -33,6 +33,14 @@ pub enum Command {
     SyncClock,
     ReadHistory {
         after: Sequence,
+        /// At most this many entries, counted from the newest; `None` reads the
+        /// whole log after `after`. Because the pump exposes history only
+        /// newest-first, a bound returns the newest window and lets the host
+        /// interleave other commands instead of holding the session for a full
+        /// walk. Compare the returned entries against
+        /// [`Report::History`](crate::Report)'s `newest` to tell whether the
+        /// page reached `after` or was cut short by the bound.
+        limit: Option<u16>,
     },
     ReadBasalProfile,
     SetBasalProfile {
@@ -184,6 +192,7 @@ mod tests {
             (
                 Command::ReadHistory {
                     after: Sequence::new(1),
+                    limit: None,
                 },
                 CommandKind::ReadHistory,
             ),
