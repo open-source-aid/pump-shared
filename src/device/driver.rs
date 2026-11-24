@@ -133,10 +133,23 @@ pub struct Config {
     pub utc_offset_secs: i32,
 }
 
+/// A driver's positive match on an advertisement: the variant it recognised, the driver's own id (so
+/// a registry polling several drivers knows which one matched), and the canonical device address the
+/// driver derives from the advertisement — `None` when it has nothing better than the
+/// advertisement's own [`Advertisement::address`]. A serial encoded in the advertised name, for
+/// example, yields the real MAC that a platform like iOS never exposes, so the harness can bind on it
+/// without knowing anything about the device.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct DriverMatch {
+    pub driver_id: &'static str,
+    pub variant: &'static Variant,
+    pub address: Option<Address>,
+}
+
 pub trait Driver: Sync {
     fn info(&self) -> &'static DriverInfo;
 
-    fn matches(&self, adv: &Advertisement<'_>) -> Option<&'static Variant>;
+    fn matches(&self, adv: &Advertisement<'_>) -> Option<DriverMatch>;
 
     fn new_engine(&self, variant: &'static Variant, config: Config) -> Box<dyn Engine>;
 }
@@ -307,5 +320,27 @@ mod tests {
         assert_eq!(INFO.listens(PROGRESS, PROGRESS), None);
         let listened: alloc::vec::Vec<_> = INFO.listened().map(|c| c.name).collect();
         assert_eq!(listened, ["bolus progress"]);
+    }
+
+    #[test]
+    fn a_driver_match_carries_the_id_variant_and_derived_address() {
+        const VARIANT: Variant = Variant {
+            id: "v1",
+            name: "V1",
+            nominal: None,
+        };
+        let address = Address::new([0xEC, 0x2A, 0xF0, 1, 2, 3]);
+        let m = DriverMatch {
+            driver_id: INFO.id,
+            variant: &VARIANT,
+            address: Some(address),
+        };
+        assert_eq!(m.driver_id, "test");
+        assert_eq!(m.variant.id, "v1");
+        assert_eq!(m.address, Some(address));
+        let same = m;
+        assert_eq!(same, m);
+        assert_ne!(DriverMatch { address: None, ..m }, m);
+        assert!(alloc::format!("{m:?}").contains("DriverMatch"));
     }
 }

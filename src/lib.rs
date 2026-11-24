@@ -14,9 +14,9 @@ pub use command::{Approximation, Command, CommandKind, Failure, Outcome, Refusal
 pub use device::SimDevice;
 pub use device::{
     grid, Address, Advertisement, BleMatch, BleOp, BleResult, Bounds, Capabilities, Config,
-    DeviceInfo, Driver, DriverInfo, EngineState, Feature, GattChar, Kind, Limits, Nominal,
-    NominalBounds, NominalCapabilities, NominalLimits, Notification, NotifyKind, PumpStatus,
-    PumpTime, Sequence, Tier, Uuid, Variant,
+    DeviceInfo, Driver, DriverInfo, DriverMatch, EngineState, Feature, GattChar, Kind, Limits,
+    Nominal, NominalBounds, NominalCapabilities, NominalLimits, Notification, NotifyKind,
+    PumpStatus, PumpTime, Sequence, Tier, Uuid, Variant,
 };
 pub use engine::{
     Action, Class, CommandId, Completion, CompletionError, Engine, Event, KeyRef, OpId, Secret,
